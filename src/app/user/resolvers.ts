@@ -1,3 +1,6 @@
+import axios from "axios";
+import { prismaClient } from "../../clients/db";
+import JWTService from "../../services/jwt";
 interface GoogleTokenResult {
   iss?: string;
   nbf?: string;
@@ -20,7 +23,39 @@ interface GoogleTokenResult {
 
 const queries = {
   verifyGoogleToken: async (parent: any, { token }: { token: string }) => {
-    return token;
+    const googleToken = token;
+    const googleOauthURL = new URL("https://oauth2.googleapis.com/tokeninfo");
+    googleOauthURL.searchParams.set("id_token", googleToken);
+
+    const { data } = await axios.get<GoogleTokenResult>(
+      googleOauthURL.toString(),
+      {
+        responseType: "json",
+      }
+    );
+
+    const user = await prismaClient.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (!user) {
+      await prismaClient.user.create({
+        data: {
+          email: data.email,
+          firstname: data.given_name,
+          lastname: data.family_name,
+          profileImageURL: data.picture,
+        },
+      });
+    }
+    const userInDb = await prismaClient.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (!userInDb) throw new Error("User With Email Not Found");
+
+    const userToken = JWTService.generateTokenForUser(userInDb);
+    return userToken;
   },
 };
 

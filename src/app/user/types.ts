@@ -5,8 +5,5 @@ firstname: String!
 lastname: String
 email: String!
 profileImageURL: String
-
 }
-
-
 `;
