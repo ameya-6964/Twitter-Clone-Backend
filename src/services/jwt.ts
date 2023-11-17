@@ -1,6 +1,5 @@
 import JWT from "jsonwebtoken";
 
-import { prismaClient } from "../clients/db";
 import { User } from "@prisma/client";
 const JWT_SECRET = "$Uper@1212";
 
